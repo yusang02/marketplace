@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.errors import AppError
 from app.database import get_db
 from app.helpers import assert_owner, get_current_user, get_listing_or_404
 
@@ -82,6 +83,14 @@ def delete_listing(
     listing = get_listing_or_404(db, id)
     assert_owner(listing, user)
 
-    # Need to come back here for non-final orders, so far just skipped
+    active_order = (
+        db.query(models.Order)
+        .filter(models.Order.listing_id == listing.id)
+        .filter(models.Order.status.in_(models.ACTIVE_STATUSES))
+        .first()
+    )
+    if active_order is not None:
+        raise AppError(409, "LISTING_HAS_ACTIVE_ORDERS", "Listing has orders that are not final")
+
     db.delete(listing)
     db.commit()
