@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field, computed_field, field_validator
 from decimal import Decimal
+from datetime import datetime
+from app.models import OrderStatus
 
+# --- Listing Schemas ---
 class ListingCreate(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     game: str = Field(min_length=1)
@@ -22,6 +25,7 @@ class ListingOut(BaseModel):
     game: str
     price_cents: int = Field(exclude=True)   
     quantity: int
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -44,3 +48,31 @@ class ListingUpdate(BaseModel):
         if not value:
             raise ValueError("Field cannot be empty")
         return value
+
+# --- Order Schemas ---
+
+class OrderCreate(BaseModel):
+    listing_id: int
+    quantity: int = Field(ge=1)
+
+class OrderOut(BaseModel):
+    id: int
+    listing_id: int
+    buyer_id: str
+    quantity: int
+    unit_price_cents: int = Field(exclude=True)
+    status: OrderStatus
+    created_at: datetime
+    listing: ListingOut = Field(exclude=True)
+
+    model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def seller_id(self) -> str:
+        return self.listing.owner_id
+
+    @computed_field
+    @property
+    def unit_price(self) -> float:
+        return self.unit_price_cents / 100

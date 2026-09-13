@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.database import Base, engine
 from app.errors import AppError
-from app.routers import listings
+from app.routers import listings, orders
 
 # --- App setup ---
 Base.metadata.create_all(bind=engine)
@@ -35,3 +35,4 @@ def validation_error_handler(request, exc: RequestValidationError):
 
 # --- Routers ---
 app.include_router(listings.router)
+app.include_router(orders.router)
