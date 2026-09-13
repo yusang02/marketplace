@@ -4,6 +4,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from enum import Enum
 from datetime import datetime
 
+# --- Listing ---
+
 class Listing(Base):
     __tablename__ = "listings"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -14,11 +16,22 @@ class Listing(Base):
     quantity: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
+# --- Order ---
+
 class OrderStatus(str, Enum):
     PENDING = "PENDING"
     PAID = "PAID"
     DELIVERED = "DELIVERED"
     CANCELLED = "CANCELLED"
+
+ALLOWED_TRANSITIONS = {
+    OrderStatus.PENDING: (OrderStatus.PAID, OrderStatus.CANCELLED),
+    OrderStatus.PAID: (OrderStatus.DELIVERED, OrderStatus.CANCELLED),
+    OrderStatus.DELIVERED: (),
+    OrderStatus.CANCELLED: (),
+}
+
+ACTIVE_STATUSES = (OrderStatus.PENDING, OrderStatus.PAID)
 
 class Order(Base):
     __tablename__ = "orders"
