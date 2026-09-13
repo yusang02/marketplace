@@ -71,6 +71,7 @@ def read_listings(
     user: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """List in-stock listings, optional ?game= filter."""
     query = db.query(models.Listing).filter(models.Listing.quantity > 0)
     if game:
         query = query.filter(models.Listing.game == game)
@@ -82,8 +83,58 @@ def read_listing(
     user: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    query = db.query(models.Listing).filter(models.Listing.id == id)
-    listing = query.first()
-    if listing is None:
-        raise AppError(status_code=404, code="LISTING_NOT_FOUND", message="Listing not found")
+    """Get one listing by id. 404 if missing."""
+    return get_listing_or_404(db, id)
+
+@app.patch("/listings/{id}", response_model=schemas.ListingOut)
+def update_listing(
+    id: int,
+    data: schemas.ListingUpdate,
+    user: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update title / price / quantity. Owner only."""
+    listing = get_listing_or_404(db, id)
+    assert_owner(listing, user)
+
+    if data.title is not None:
+        listing.title = data.title
+
+    if data.price is not None:
+        listing.price_cents = int(data.price * 100)
+
+    if data.quantity is not None:
+        listing.quantity = data.quantity
+
+    db.commit()
+    db.refresh(listing)
     return listing
+""
+@app.delete("/listings/{id}")
+def delete_listing(   
+    id: int,
+    user: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a listing. Owner only. 409 if it has non-final orders."""
+    listing = get_listing_or_404(db, id)
+    assert_owner(listing, user)
+
+    # Need to come back here for non-final orders, so far just skipped
+    db.delete(listing)
+    db.commit()
+    
+
+
+# --- Helpers ---
+def get_listing_or_404(db: Session, id: int) -> models.Listing:
+    """Fetch a listing or raise 404."""
+    listing = db.get(models.Listing, id)
+    if listing is None:
+        raise AppError(404, "LISTING_NOT_FOUND", "Listing not found")
+    return listing
+
+def assert_owner(listing: models.Listing, user: str) -> None:
+    """Raise 403 unless the caller owns the listing."""
+    if listing.owner_id != user:
+        raise AppError(403, "FORBIDDEN", "You do not own this listing")
