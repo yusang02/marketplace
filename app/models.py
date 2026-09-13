@@ -9,7 +9,7 @@ class Listing(Base):
     owner_id: Mapped[str]
     title: Mapped[str]
     game: Mapped[str]
-    price_cents: Mapped[int]
+    price_cents: Mapped[int] # Store price in cents to avoid floating point issues
     quantity: Mapped[int]
 
 class OrderStatus(str, Enum):
