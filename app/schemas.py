@@ -59,18 +59,13 @@ class OrderOut(BaseModel):
     id: int
     listing_id: int
     buyer_id: str
+    seller_id: str
     quantity: int
     unit_price_cents: int = Field(exclude=True)
     status: OrderStatus
     created_at: datetime
-    listing: ListingOut = Field(exclude=True)
 
     model_config = {"from_attributes": True}
-
-    @computed_field
-    @property
-    def seller_id(self) -> str:
-        return self.listing.owner_id
 
     @computed_field
     @property

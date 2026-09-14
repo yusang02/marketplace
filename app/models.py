@@ -1,6 +1,6 @@
 from app.database import Base
 from sqlalchemy import ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from enum import Enum
 from datetime import datetime
 
@@ -37,9 +37,10 @@ class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True)
     listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"))
-    buyer_id: Mapped[str]
+    buyer_id: Mapped[str] = mapped_column(index=True)
+    # Snapshot: the listing row can be deleted later, but an order must stay
+    seller_id: Mapped[str] = mapped_column(index=True)
     quantity: Mapped[int]
     unit_price_cents: Mapped[int]   # snapshot: listing price may change later
     status: Mapped[OrderStatus]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    listing: Mapped["Listing"] = relationship()

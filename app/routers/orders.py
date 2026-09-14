@@ -36,6 +36,7 @@ def create_order(
     order = models.Order(
         listing_id=listing.id,
         buyer_id=user,
+        seller_id=listing.owner_id,
         quantity=data.quantity,
         unit_price_cents=listing.price_cents,
         status=models.OrderStatus.PENDING,
@@ -52,14 +53,16 @@ def read_orders(
     db: Session = Depends(get_db),
 ):
     """Orders where the caller is the buyer or the seller. Optional ?role= filter."""
-    query = db.query(models.Order).join(models.Listing)
+    query = db.query(models.Order)
 
     if role == "buyer":
         query = query.filter(models.Order.buyer_id == user)
     elif role == "seller":
-        query = query.filter(models.Listing.owner_id == user)
+        query = query.filter(models.Order.seller_id == user)
     else:
-        query = query.filter(or_(models.Order.buyer_id == user, models.Listing.owner_id == user))
+        query = query.filter(
+            or_(models.Order.buyer_id == user, models.Order.seller_id == user)
+        )
     return query.all()
 
 @router.post("/{id}/pay", response_model=schemas.OrderOut)
@@ -72,7 +75,7 @@ def pay_order(
     order = get_order_or_404(db, id)
     if order.buyer_id != user:
         raise AppError(403, "FORBIDDEN", "Only the buyer can pay")
-    
+
     assert_transition(order, models.OrderStatus.PAID)
     order.status = models.OrderStatus.PAID
 
@@ -88,9 +91,9 @@ def deliver_order(
 ):
     """PAID -> DELIVERED. Seller only."""
     order = get_order_or_404(db, id)
-    if order.listing.owner_id != user:
+    if order.seller_id != user:
         raise AppError(403, "FORBIDDEN", "Only the seller can deliver")
-    
+
     assert_transition(order, models.OrderStatus.DELIVERED)
     order.status = models.OrderStatus.DELIVERED
 
@@ -107,7 +110,7 @@ def cancel_order(
     """PENDING or PAID -> CANCELLED. Buyer or seller. Restores listing stock."""
     order = get_order_or_404(db, id)
 
-    if user not in (order.buyer_id, order.listing.owner_id):
+    if user not in (order.buyer_id, order.seller_id):
         raise AppError(403, "FORBIDDEN", "Only the buyer or seller can cancel")
 
     assert_transition(order, models.OrderStatus.CANCELLED)
