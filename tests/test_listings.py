@@ -180,6 +180,20 @@ def test_patch_by_non_owner_is_403(client, bob, listing):
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "FORBIDDEN"
 
+def test_patch_with_a_blank_title_is_rejected(client, alice, listing):
+    response = client.patch(
+        f"/listings/{listing['id']}", json={"title": "   "}, headers=alice
+    )
+    assert response.status_code == 422
+
+
+def test_patch_with_a_null_title_leaves_it_unchanged(client, alice, listing):
+    response = client.patch(
+        f"/listings/{listing['id']}", json={"title": None, "price": "250.00"}, headers=alice
+    )
+    assert response.status_code == 200
+    assert response.json()["title"] == "LOL Unranked Smurf Account"
+
 
 def test_delete_by_non_owner_is_403(client, bob, listing):
     response = client.delete(f"/listings/{listing['id']}", headers=bob)

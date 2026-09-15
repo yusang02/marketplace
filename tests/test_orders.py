@@ -39,6 +39,12 @@ def test_ordering_a_missing_listing_is_404(client, bob):
     assert response.json()["error"]["code"] == "LISTING_NOT_FOUND"
 
 
+def test_acting_on_a_missing_order_is_404(client, bob):
+    response = client.post("/orders/999/pay", headers=bob)
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "ORDER_NOT_FOUND"
+
+
 def test_insufficient_stock_is_409(client, bob, listing):
     response = client.post(
         "/orders", json={"listing_id": listing["id"], "quantity": 10}, headers=bob
@@ -67,6 +73,16 @@ def test_only_the_seller_can_deliver(client, bob, listing):
 
     response = client.post(f"/orders/{order['id']}/deliver", headers=bob)  # buyer tries
     assert response.status_code == 403
+
+
+def test_a_third_party_cannot_cancel(client, bob, listing):
+    order = client.post(
+        "/orders", json={"listing_id": listing["id"], "quantity": 1}, headers=bob
+    ).json()
+
+    response = client.post(f"/orders/{order['id']}/cancel", headers={"X-User-Id": "carol"})
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "FORBIDDEN"
 
 
 def test_delivering_a_pending_order_is_409(client, alice, bob, listing):
@@ -121,7 +137,7 @@ def test_orders_are_only_visible_to_buyer_and_seller(client, alice, bob, listing
 
     assert len(client.get("/orders", headers=bob).json()) == 1      # buyer
     assert len(client.get("/orders", headers=alice).json()) == 1    # seller
-    assert client.get("/orders", headers={"X-User-Id": "eve"}).json() == []
+    assert client.get("/orders", headers={"X-User-Id": "carol"}).json() == []
 
 
 def test_role_filter(client, alice, bob, listing):
