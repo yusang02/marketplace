@@ -4,10 +4,18 @@ from fastapi.exceptions import RequestValidationError
 from app.database import Base, engine
 from app.errors import AppError
 from app.routers import listings, orders
+from fastapi.middleware.cors import CORSMiddleware
 
 # --- App setup ---
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Marketplace API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Error handling ---
 @app.exception_handler(AppError)
