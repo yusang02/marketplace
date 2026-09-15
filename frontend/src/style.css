@@ -1,0 +1,365 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap");
+
+:root {
+  --bg: #16161a;
+  --card: #1d1d21;
+  --hover: #232329;
+  --line: #2e2e34;
+  --text: #ececef;
+  --dim: #9b9ba3;
+  --danger: #f06a6a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+/* --- Text --- */
+
+h1 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0;
+}
+
+h2 {
+  font-size: 17px;
+  font-weight: 500;
+  margin: 0;
+}
+
+h3 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+
+.muted {
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.big {
+  font-size: 22px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.price {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* --- Controls --- */
+
+input,
+select,
+button {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 15px;
+  padding: 8px 14px;
+}
+
+button {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+button:hover {
+  border-color: #45454d;
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+button.plain {
+  border: none;
+  background: none;
+  color: var(--dim);
+  padding: 2px 6px;
+}
+
+select {
+  width: 124px;
+  font-size: 14px;
+  padding: 7px 10px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--dim);
+  margin: 0 0 6px 2px;
+}
+
+label.spaced {
+  margin-top: 12px;
+}
+
+/* --- Header --- */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-input {
+  width: 110px;
+}
+
+.banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: #3a1e1e;
+  color: var(--danger);
+  border-radius: 6px;
+  padding: 11px 15px;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.banner b {
+  font-weight: 500;
+}
+
+/* --- Columns --- */
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Only the listings head holds a button. box-sizing counts the padding inside
+   min-height, so this has to clear 16px of padding plus the 36px button for
+   both toolbars to sit on the same line. */
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 54px;
+  padding: 16px 18px 0;
+}
+
+/* Filter on the left, sort on the right: one narrows the set, the other only
+   reorders it. */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.empty {
+  padding: 22px 18px;
+  margin: 0;
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.row {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: var(--hover);
+}
+
+.row-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.row-line:last-child {
+  margin-bottom: 0;
+}
+
+.row-line.bottom {
+  align-items: flex-end;
+}
+
+.right {
+  text-align: right;
+}
+
+/* --- Tags --- */
+
+.tag {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* The negative margin cancels the pill's own padding so its text starts on the
+   same line as the title above it. */
+.tag.game {
+  background: #2b2545;
+  color: #b3a7f0;
+  margin-left: -10px;
+}
+
+.modal .tag.game {
+  margin-left: 0;
+}
+
+.tag.PENDING {
+  background: #3b2d12;
+  color: #e2a23c;
+}
+
+.tag.PAID {
+  background: #14304d;
+  color: #6cb0ee;
+}
+
+.tag.DELIVERED {
+  background: #1a3a20;
+  color: #6fc37f;
+}
+
+.tag.CANCELLED {
+  background: #3a1e1e;
+  color: var(--danger);
+}
+
+/* --- Modal --- */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 26px 24px;
+  width: 440px;
+  max-width: 92%;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin: 0 -14px 14px 0;
+}
+
+/* A dropdown floats over the content below it, so the shadow is what tells the
+   eye it is a layer rather than a broken title. */
+.menu {
+  position: absolute;
+  top: 40px;
+  right: 20px;
+  background: var(--hover);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 2;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Red text carries the warning, so the item needs no outline of its own. */
+.menu button {
+  color: var(--danger);
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 5px;
+}
+
+.menu button:hover {
+  background: rgba(240, 106, 106, 0.12);
+}
+
+.modal input {
+  width: 100%;
+}
+
+.modal input.qty {
+  width: 105px;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.boxes {
+  margin: 16px 0;
+}
+
+.box {
+  background: var(--hover);
+  border-radius: 8px;
+  padding: 13px 15px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 18px 0;
+}
