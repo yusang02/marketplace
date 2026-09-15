@@ -48,10 +48,10 @@ def bob():
 @pytest.fixture
 def listing(client, alice):
     """A listing owned by alice: 5 units at 10.50."""
-    r = client.post(
+    response = client.post(
         "/listings",
         json={"title": "LOL Unranked Smurf Account", "game": "LOL", "price": "300.50", "quantity": 5},
         headers=alice,
     )
-    assert r.status_code == 200
-    return r.json()
+    assert response.status_code == 200
+    return response.json()
