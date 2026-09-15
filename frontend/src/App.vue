@@ -149,13 +149,6 @@ function capitalise(status) {
   return status[0] + status.slice(1).toLowerCase();
 }
 
-// An order carries listing_id but no title, and sold-out or deleted listings
-// are missing from GET /listings, so the id is the fallback.
-function orderTitle(order) {
-  const listing = listings.value.find((row) => row.id === order.listing_id);
-  return listing ? listing.title : `Listing #${order.listing_id}`;
-}
-
 // --- Modal ---
 
 // The open row is looked up by id every time instead of being copied into a
@@ -366,7 +359,7 @@ function orderAction(name) {
           <div class="row-line">
             <span
               ><span class="muted">#{{ order.id }}</span>
-              {{ orderTitle(order) }}</span
+              {{ order.listing_title }}</span
             >
             <span class="tag" :class="order.status">{{
               capitalise(order.status)
@@ -454,11 +447,7 @@ function orderAction(name) {
         <div v-else-if="modal === 'listing'">
           <h3>{{ openListing.title }}</h3>
           <div class="row-line">
-            <span>
-              <span class="tag game">{{ openListing.game }}</span>
-              {{ openListing.owner_id }}
-              <span v-if="isMyListing" class="muted">(you)</span>
-            </span>
+            <span class="tag game">{{ openListing.game }}</span>
             <span class="muted">{{ shortDate(openListing.created_at) }}</span>
           </div>
 
@@ -471,6 +460,13 @@ function orderAction(name) {
               <div class="muted">In stock</div>
               <div class="big">{{ openListing.quantity }}</div>
             </div>
+          </div>
+          <hr />
+
+          <label class="nudge">Seller</label>
+          <div class="nudge">
+            {{ openListing.owner_id }}
+            <span v-if="isMyListing" class="muted">(you)</span>
           </div>
           <hr />
 
@@ -525,8 +521,7 @@ function orderAction(name) {
               capitalise(openOrder.status)
             }}</span>
           </div>
-          <h3>{{ orderTitle(openOrder) }}</h3>
-
+          <h3>{{ openOrder.listing_title }}</h3>
           <div class="two boxes">
             <div class="box">
               <div class="muted">Quantity</div>

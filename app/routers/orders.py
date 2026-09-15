@@ -37,6 +37,7 @@ def create_order(
         listing_id=listing.id,
         buyer_id=user,
         seller_id=listing.owner_id,
+        listing_title=listing.title,
         quantity=data.quantity,
         unit_price_cents=listing.price_cents,
         status=models.OrderStatus.PENDING,

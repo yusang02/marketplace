@@ -36,9 +36,9 @@ ACTIVE_STATUSES = (OrderStatus.PENDING, OrderStatus.PAID)
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True)
+    listing_title: Mapped[str] # Snapshot: the listing row can be deleted later, but an order must stay
     listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"))
-    buyer_id: Mapped[str] = mapped_column(index=True)
-    # Snapshot: the listing row can be deleted later, but an order must stay
+    buyer_id: Mapped[str] = mapped_column(index=True) # Snapshot: the listing row can be deleted later, but an order must stay
     seller_id: Mapped[str] = mapped_column(index=True)
     quantity: Mapped[int]
     unit_price_cents: Mapped[int]   # snapshot: listing price may change later

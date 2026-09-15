@@ -171,3 +171,33 @@ def test_two_buyers_cannot_both_take_the_same_stock(client, listing):
 
     assert sorted(results) == [200, 409]
     assert client.get(f"/listings/{listing['id']}", headers={"X-User-Id": "alice"}).json()["quantity"] == 0
+
+
+def test_orders_survive_their_listing_being_deleted(client, alice, bob, listing):
+    order = client.post(
+        "/orders",
+        json={"listing_id": listing["id"], "quantity": 1},
+        headers=bob,
+    ).json()
+    client.post(f"/orders/{order['id']}/cancel", headers=bob)
+
+    assert client.delete(f"/listings/{listing['id']}", headers=alice).status_code == 200
+
+    response = client.get("/orders", headers=bob)
+    assert response.status_code == 200
+    assert response.json()[0]["id"] == order["id"]
+    assert response.json()[0]["listing_title"] == "LOL Unranked Smurf Account"
+
+
+def test_seller_still_sees_an_order_after_deleting_the_listing(client, alice, bob, listing):
+    order = client.post(
+        "/orders",
+        json={"listing_id": listing["id"], "quantity": 1},
+        headers=bob,
+    ).json()
+    client.post(f"/orders/{order['id']}/cancel", headers=bob)
+    client.delete(f"/listings/{listing['id']}", headers=alice)
+
+    response = client.get("/orders", headers=alice)
+    assert response.status_code == 200
+    assert response.json()[0]["seller_id"] == "alice"

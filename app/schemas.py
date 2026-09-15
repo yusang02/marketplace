@@ -58,6 +58,7 @@ class OrderCreate(BaseModel):
 class OrderOut(BaseModel):
     id: int
     listing_id: int
+    listing_title: str
     buyer_id: str
     seller_id: str
     quantity: int
