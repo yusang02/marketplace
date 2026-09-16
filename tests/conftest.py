@@ -47,7 +47,7 @@ def bob():
 
 @pytest.fixture
 def listing(client, alice):
-    """A listing owned by alice: 5 units at 10.50."""
+    """A listing owned by alice."""
     response = client.post(
         "/listings",
         json={"title": "LOL Unranked Smurf Account", "game": "LOL", "price": "300.50", "quantity": 5},

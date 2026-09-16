@@ -150,29 +150,6 @@ def test_role_filter(client, alice, bob, listing):
     assert len(client.get("/orders?role=seller", headers=alice).json()) == 1
 
 
-def test_two_buyers_cannot_both_take_the_same_stock(client, listing):
-    results = []
-
-    def buy(user):
-        response = client.post(
-            "/orders",
-            json={"listing_id": listing["id"], "quantity": 5},
-            headers={"X-User-Id": user},
-        )
-        results.append(response.status_code)
-
-    bob_thread = threading.Thread(target=buy, args=("bob",))
-    carol_thread = threading.Thread(target=buy, args=("carol",))
-
-    bob_thread.start()
-    carol_thread.start()
-    bob_thread.join()
-    carol_thread.join()
-
-    assert sorted(results) == [200, 409]
-    assert client.get(f"/listings/{listing['id']}", headers={"X-User-Id": "alice"}).json()["quantity"] == 0
-
-
 def test_orders_survive_their_listing_being_deleted(client, alice, bob, listing):
     order = client.post(
         "/orders",
@@ -201,3 +178,87 @@ def test_seller_still_sees_an_order_after_deleting_the_listing(client, alice, bo
     response = client.get("/orders", headers=alice)
     assert response.status_code == 200
     assert response.json()[0]["seller_id"] == "alice"
+
+
+# --- Race condition tests ---
+
+# One round can miss a race, so repeat it
+RACE_ROUNDS = 20
+
+
+def _post_at_the_same_time(client, requests):
+    """Send POST requests at the same time and return their status codes."""
+    barrier = threading.Barrier(len(requests))  # all threads start together
+    results = []
+
+    def send(path, headers, body):
+        barrier.wait()
+        response = client.post(path, headers=headers, json=body)
+        results.append(response.status_code)
+
+    threads = []
+    for path, headers, body in requests:
+        threads.append(threading.Thread(target=send, args=(path, headers, body)))
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    return sorted(results)
+
+
+def test_two_buyers_cannot_both_take_the_same_stock(client, alice, bob, listing):
+    """Two buyers order all stock at once. Only one succeeds."""
+
+    carol = {"X-User-Id": "carol"}
+    body = {"listing_id": listing["id"], "quantity": 5}
+
+    for _ in range(RACE_ROUNDS):
+        # Refill to 5 so every round fights over the full stock again
+        client.patch(f"/listings/{listing['id']}", json={"quantity": 5}, headers=alice)
+
+        results = _post_at_the_same_time(client, [
+            ("/orders", bob, body),
+            ("/orders", carol, body),
+        ])
+
+        assert results == [200, 409]
+        assert client.get(f"/listings/{listing['id']}", headers=alice).json()["quantity"] == 0
+
+
+def test_double_cancel_restores_stock_once(client, alice, bob, listing):
+    """Buyer and seller cancel at once. Stock is restored only once."""
+
+    for _ in range(RACE_ROUNDS):
+        order = client.post(
+            "/orders", json={"listing_id": listing["id"], "quantity": 2}, headers=bob
+        ).json()
+        cancel = f"/orders/{order['id']}/cancel"
+
+        results = _post_at_the_same_time(client, [
+            (cancel, bob, None),
+            (cancel, alice, None),
+        ])
+
+        assert client.get(f"/listings/{listing['id']}", headers=bob).json()["quantity"] == 5
+        assert results == [200, 409]
+
+
+def test_pay_and_cancel_at_once_ends_cancelled(client, alice, bob, listing):
+    """Pay and cancel at once. Never ends PAID with stock already restored."""
+
+    for _ in range(RACE_ROUNDS):
+        order = client.post(
+            "/orders", json={"listing_id": listing["id"], "quantity": 2}, headers=bob
+        ).json()
+
+        _post_at_the_same_time(client, [
+            (f"/orders/{order['id']}/pay", bob, None),
+            (f"/orders/{order['id']}/cancel", alice, None),
+        ])
+
+        # Must end CANCELLED with stock back, never PAID with stock returned
+        for row in client.get("/orders", headers=bob).json():
+            if row["id"] == order["id"]:
+                status = row["status"]
+        stock = client.get(f"/listings/{listing['id']}", headers=bob).json()["quantity"]
+        assert (status, stock) == ("CANCELLED", 5)
