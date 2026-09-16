@@ -94,20 +94,28 @@ deciding in Python and writing it back would leave a gap between the read and th
 for another request to slip into. Here the database tests the condition and applies the
 change together, under the lock it already takes for the update, so the second request
 to reach the last unit matches no row, comes back with a `rowcount` of 0 and gets a 409.
-A test fires two orders from two threads and asserts the results are exactly
-`[200, 409]`. Cancelling adds the quantity back the same way.
+Cancelling adds the quantity back the same way.
 
-**Errors.** One envelope for everything. `AppError` carries a status, a code and a
-message, and a handler turns it into the JSON above. A second handler reshapes
-Pydantic's validation errors into the same envelope, so a client never parses two
-formats and no stack trace reaches it.
+**Concurrent status changes.** Pay, deliver and cancel had the same read-then-write
+gap. If the buyer and seller cancel an order for 2 at the same moment, both got 200
+and the stock was restored twice (5 became 7). A pay racing a cancel could also leave
+a `PAID` order with its stock already returned. `apply_transition` uses the same
+conditional `UPDATE`, changing the status only if it is still allowed by
+`ALLOWED_TRANSITIONS`. The second request now gets 409 and stock is restored once.
+I wrote the race tests first and watched them fail before fixing it.
 
-**Tests.** 40 tests at 98% coverage. The uncovered lines are the database session
+**Tests.** 42 tests at 98% coverage. Three of them are race tests: two orders for the
+last stock, two cancels on one order, and a pay racing a cancel. A
+`threading.Barrier` makes both requests start at the same instant, and each test
+repeats 20 rounds because a single round can miss the race. The uncovered lines are the database session
 factory, which the tests replace with their own. They are grouped by domain rule rather
 than by file and all go through `TestClient`, so one call exercises the header auth, the
 validation, the status machine, the database work and the serialisation together. Each
 test gets its own SQLite file rather than `:memory:`, which would give the two
-concurrency threads separate copies of the data. The frontend is a single Vue component
+concurrency threads separate copies of the data.
+GitHub Actions runs the full suite on every push and pull request (it came up in
+my first-round interview, so I set it up here). It already caught a typo in
+`requirements.txt` that only broke on a clean install. The frontend is a single Vue component
 that refetches both lists after every action, so the screen shows what the database
 holds. It hides buttons the current user cannot use, but the API enforces that itself.
 
