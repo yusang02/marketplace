@@ -1,5 +1,6 @@
 from fastapi import Header
 from sqlalchemy.orm import Session
+from sqlalchemy import update
 
 from app import models
 from app.errors import AppError
@@ -38,3 +39,17 @@ def assert_transition(order: models.Order, to_status: models.OrderStatus) -> Non
             "INVALID_TRANSITION",
             f"Cannot go from {order.status.value} to {to_status.value}",
         )
+
+def apply_transition(db: Session, order: models.Order, to_status: models.OrderStatus) -> None:
+    """Change status only if the DB row is still in a legal source status. 409 otherwise."""
+    sources = [s for s, targets in models.ALLOWED_TRANSITIONS.items() if to_status in targets]
+    result = db.execute(
+        update(models.Order)
+        .where(models.Order.id == order.id)
+        .where(models.Order.status.in_(sources))
+        .values(status=to_status)
+    )
+    if result.rowcount == 0:
+        db.rollback()
+        db.refresh(order)  # reload the status the other request committed
+        assert_transition(order, to_status)  # raises 409 with the real current status

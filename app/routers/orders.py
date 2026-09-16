@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.database import get_db
 from app.errors import AppError
-from app.helpers import get_current_user, get_listing_or_404, get_order_or_404, assert_transition
+from app.helpers import get_current_user, get_listing_or_404, get_order_or_404, assert_transition, apply_transition
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -78,7 +78,7 @@ def pay_order(
         raise AppError(403, "FORBIDDEN", "Only the buyer can pay")
 
     assert_transition(order, models.OrderStatus.PAID)
-    order.status = models.OrderStatus.PAID
+    apply_transition(db, order, models.OrderStatus.PAID)
 
     db.commit()
     db.refresh(order)
@@ -96,7 +96,7 @@ def deliver_order(
         raise AppError(403, "FORBIDDEN", "Only the seller can deliver")
 
     assert_transition(order, models.OrderStatus.DELIVERED)
-    order.status = models.OrderStatus.DELIVERED
+    apply_transition(db, order, models.OrderStatus.DELIVERED)
 
     db.commit()
     db.refresh(order)
@@ -115,8 +115,8 @@ def cancel_order(
         raise AppError(403, "FORBIDDEN", "Only the buyer or seller can cancel")
 
     assert_transition(order, models.OrderStatus.CANCELLED)
-    order.status = models.OrderStatus.CANCELLED
-
+    apply_transition(db, order, models.OrderStatus.CANCELLED)
+    
     # Restore stock
     db.execute(
         update(models.Listing)
